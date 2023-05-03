@@ -7,7 +7,7 @@ using (AudioFileReader reader = new AudioFileReader("./Ressources/ff123_kraftwer
 
     int fps = 70;
 
-    Complex[] Array = new Complex[2048];
+    Complex[] Array = new Complex[reader.Length/2];
     /*******fill the array************/
     FourierTransform.FFT(Array, FourierTransform.Direction.Forward);
 

@@ -172,7 +172,6 @@ def main():
     parser = opts_parser()
     options = parser.parse_args()
 
-    print("asd")
     # iterate over input directory
     indir = Path(options.indir)
     infiles = list(indir.glob('*.wav'))

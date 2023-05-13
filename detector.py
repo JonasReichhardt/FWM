@@ -69,11 +69,17 @@ def detect_everything(filename, options):
             S=magspect, sr=sample_rate, n_mels=80, fmin=27.5, fmax=8000)
 
     # compress magnitudes logarithmically
-    melspect = np.log1p(100 * melspect) 
+    melspect = np.log1p(1 + 100 * melspect) 
 
     # compute onset detection function
     odf, odf_rate = onset_detection_function(
             sample_rate, signal, fps, spect, magspect, melspect, options)
+
+    import matplotlib.pyplot as plt
+    plt.title('melspect')
+    plt.imshow(melspect, origin='lower', aspect='auto')
+    plt.plot(np.arange(len(odf)), odf, 'r')
+    plt.show()
 
     # detect onsets from the onset detection function
     onsets = detect_onsets(odf_rate, odf, options)
@@ -116,16 +122,22 @@ def detect_everything(filename, options):
 def onset_detection_function(sample_rate, signal, fps, spect, magspect,
                              melspect, options):
     """
-    Compute an onset detection function. Ideally, this would have peaks
-    where the onsets are. Returns the function values and its sample/frame
-    rate in values per second as a tuple: (values, values_per_second)
+    LSFS
     """
-    # we only have a dumb dummy implementation here.
-    # it returns every 1000th absolute sample value of the input signal.
-    # this is not a useful solution at all, just a placeholder.
-    values = np.abs(signal[::1000])
+    # transpose matrix for easier calculation
+    # first dimension is now time
+    values = []
     values_per_second = sample_rate / 1000
+
+    melspect_transp = np.transpose(melspect)
+    for idx in range(1, len(melspect_transp)):
+        sum_t = np.sum(melspect_transp[idx])
+        sum_th = np.sum(melspect_transp[idx-1])
+        sum = sum_t - sum_th
+        values.append(max(sum, 0))
+            
     return values, values_per_second
+        
 
 
 def detect_onsets(odf_rate, odf, options):

@@ -153,7 +153,7 @@ def detect_onsets(odf_rate, odf, options):
     w_ub = 3
     w = 6
 
-    x = librosa.util.peak_pick(np.array(odf), pre_max=3, post_max=3, pre_avg=3, post_avg=3, delta=5, wait=5)
+    x = librosa.util.peak_pick(np.array(odf), pre_max=5, post_max=5, pre_avg=5, post_avg=5, delta=5, wait=5)
     return x/odf_rate, x
 
 

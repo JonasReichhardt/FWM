@@ -78,12 +78,13 @@ def detect_everything(filename, options):
     # detect onsets from the onset detection function
     onsets, onsets_idx = detect_onsets(odf_rate, odf, options)
 
-    import matplotlib.pyplot as plt
-    plt.title('melspect')
-    plt.imshow(melspect, origin='lower', aspect='auto')
-    plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
-    plt.scatter(onsets_idx, [odf[i] for i in onsets_idx])
-    plt.show()
+    if options.plot:
+        import matplotlib.pyplot as plt
+        plt.title('melspect')
+        plt.imshow(melspect, origin='lower', aspect='auto')
+        plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
+        plt.scatter(onsets_idx, [odf[i] for i in onsets_idx], color='yellow')
+        plt.show()
 
     # detect tempo from everything we have
     tempo = detect_tempo(
@@ -126,7 +127,7 @@ def onset_detection_function(sample_rate, signal, fps, spect, magspect,
     LSFS
     """
     values = []
-    values_per_second = sample_rate / 1000
+    values_per_second = fps
 
     # transpose matrix for easier calculation
     # first dimension is now time instead of frequency
@@ -150,9 +151,9 @@ def detect_onsets(odf_rate, odf, options):
 
     w_lb = 3
     w_ub = 3
-    w = 10
+    w = 6
 
-    x = librosa.util.peak_pick(np.array(odf), pre_max=w_lb, post_max=w_ub, pre_avg=w_lb, post_avg=w_ub, delta=0.5, wait=w)
+    x = librosa.util.peak_pick(np.array(odf), pre_max=3, post_max=3, pre_avg=3, post_avg=3, delta=5, wait=5)
     return x/odf_rate, x
 
 

@@ -75,14 +75,15 @@ def detect_everything(filename, options):
     odf, odf_rate = onset_detection_function(
             sample_rate, signal, fps, spect, magspect, melspect, options)
 
+    # detect onsets from the onset detection function
+    onsets, onsets_idx = detect_onsets(odf_rate, odf, options)
+
     import matplotlib.pyplot as plt
     plt.title('melspect')
     plt.imshow(melspect, origin='lower', aspect='auto')
-    plt.plot(np.arange(len(odf)), odf, 'r')
+    plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
+    plt.scatter(onsets_idx, [odf[i] for i in onsets_idx])
     plt.show()
-
-    # detect onsets from the onset detection function
-    onsets = detect_onsets(odf_rate, odf, options)
 
     # detect tempo from everything we have
     tempo = detect_tempo(
@@ -124,11 +125,11 @@ def onset_detection_function(sample_rate, signal, fps, spect, magspect,
     """
     LSFS
     """
-    # transpose matrix for easier calculation
-    # first dimension is now time
     values = []
     values_per_second = sample_rate / 1000
 
+    # transpose matrix for easier calculation
+    # first dimension is now time instead of frequency
     melspect_transp = np.transpose(melspect)
     for idx in range(1, len(melspect_transp)):
         sum_t = np.sum(melspect_transp[idx])
@@ -145,12 +146,15 @@ def detect_onsets(odf_rate, odf, options):
     Detect onsets in the onset detection function.
     Returns the positions in seconds.
     """
-    # we only have a dumb dummy implementation here.
-    # it returns the timestamps of the 100 strongest values.
-    # this is not a useful solution at all, just a placeholder.
-    strongest_indices = np.argpartition(odf, 100)[:100]
-    strongest_indices.sort()
-    return strongest_indices / odf_rate
+    # return strongest_indices / odf_rate
+
+    w_lb = 3
+    w_ub = 3
+    w = 10
+
+    x = librosa.util.peak_pick(np.array(odf), pre_max=w_lb, post_max=w_ub, pre_avg=w_lb, post_avg=w_ub, delta=0.5, wait=w)
+    return x/odf_rate, x
+
 
 
 def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,

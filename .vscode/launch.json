@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--plot","resources/", "out.json"]
+            "args": ["--plot","test_resources/", "out.json"]
         }
     ],
 }

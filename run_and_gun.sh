@@ -1,16 +1,20 @@
 #!/bin/bash
-START=$(date +%s)
+echo "running detector"
 
-printf "running detector\n"
+DET_START=$(date +%s)
 python detector.py train/ train.json
-printf "done...\n\n"
+DET_END=$(date +%s)
 
-printf "running evaluation\n"
+DET_DIFF=$(( $DET_END - $DET_START ))
+echo "Detection took $DET_DIFF seconds"
+echo ""
+
+echo "running evaluation"
+EVAL_START=$(date +%s)
 python evaluate.py train/ train.json
-printf "done...\n\n" 
+EVAL_END=$(date +%s)
 
-END=$(date +%s)
-DIFF=$(( $END - $START ))
+EVAL_DIFF=$(( $EVAL_END - $EVAL_START ))
+echo "Evaluation took $EVAL_DIFF seconds"
 
-echo "It took $DIFF seconds"
 read

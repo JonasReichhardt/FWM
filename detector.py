@@ -147,13 +147,16 @@ def detect_onsets(odf_rate, odf, options):
     Detect onsets in the onset detection function.
     Returns the positions in seconds.
     """
-    # return strongest_indices / odf_rate
+    
+    # magic parameters
+    pre_max = 5
+    post_max = 5
+    pre_avg = 6
+    post_avg = 6
+    delta = 3
+    wait = 3
 
-    w_lb = 3
-    w_ub = 3
-    w = 6
-
-    x = librosa.util.peak_pick(np.array(odf), pre_max=5, post_max=5, pre_avg=5, post_avg=5, delta=5, wait=5)
+    x = librosa.util.peak_pick(np.array(odf), pre_max=pre_max, post_max=post_max, pre_avg=pre_avg, post_avg=post_avg, delta=delta, wait=wait)
     return x/odf_rate, x
 
 

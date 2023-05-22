@@ -2,7 +2,8 @@ Audio and Music Processing Challenge Template
 =============================================
 
 Best values on training set
-Onsets F-score: 0.7695
+
+Onsets F-score: 0.7753
 
 This provides two Python scripts that may serve as a template for your submission to the onset detection, beat detection and tempo estimation challenges. Usage is completely optional.
 

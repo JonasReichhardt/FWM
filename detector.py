@@ -149,15 +149,44 @@ def detect_onsets(odf_rate, odf, options):
     """
     
     # magic parameters
-    pre_max = 5
-    post_max = 5
-    pre_avg = 6
-    post_avg = 6
-    delta = 3
-    wait = 3
+    max_lb = 5      #w1
+    max_up = 5      #w2
+    avg_lb = 6      #w3
+    avg_up = 6      #w4
+    threshold = 3   #delta    
+    distance = 3    #w5
 
-    x = librosa.util.peak_pick(np.array(odf), pre_max=pre_max, post_max=post_max, pre_avg=pre_avg, post_avg=post_avg, delta=delta, wait=wait)
-    return x/odf_rate, x
+    onset_index = []
+
+    # sliding window over odf array
+    n = 0
+    while n < len(odf):
+        # calculate max in window
+        # sliding window from max(0,lower_bound) to min(upper_bound,list_length)
+        # to get rid of out of bounds
+        detection_list = odf[max(0,n-max_lb):min(n+max_up,len(odf))]
+        detection_index = np.array(detection_list).argmax()
+
+        # calculate mean in window
+        mean_list = odf[max(0,n-avg_lb):min(n+avg_up,len(odf))]
+        lcl_mean = sum(mean_list) / len(mean_list) + threshold
+
+        # local max needs to be larger or equal than local mean
+        if detection_list[detection_index] >= lcl_mean and detection_list[detection_index] > 0:
+           onset_index.append(max(0,n-max_lb)+detection_index)
+        
+        n+=1
+
+    # filter out items being too close together
+    onset_index_filtered = []
+    last = 0
+    for i in onset_index:
+        if i > last + distance:
+            onset_index_filtered.append(i)
+            last = i
+    
+    # return sample in time domain and sample index
+    return np.array(onset_index_filtered)/odf_rate, onset_index_filtered, 
 
 
 

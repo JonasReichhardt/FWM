@@ -132,6 +132,9 @@ def onset_detection_function(sample_rate, signal, fps, spect, magspect,
     # transpose matrix for easier calculation
     # first dimension is now time instead of frequency
     melspect_transp = np.transpose(melspect)
+
+    # todo maximum filter here for specflux
+    
     for idx in range(1, len(melspect_transp)):
         sum_t = np.sum(melspect_transp[idx])
         sum_th = np.sum(melspect_transp[idx-1])

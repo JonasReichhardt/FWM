@@ -15,6 +15,7 @@ from argparse import ArgumentParser
 import json
 
 import numpy as np
+import copy
 from scipy.io import wavfile
 import librosa
 try:
@@ -71,6 +72,9 @@ def detect_everything(filename, options):
     # compress magnitudes logarithmically
     melspect = np.log1p(1 + 100 * melspect) 
 
+    # apply super flux
+    melspect = super_flux(melspect)
+
     # compute onset detection function
     odf, odf_rate = onset_detection_function(
             sample_rate, signal, fps, spect, magspect, melspect, options)
@@ -82,8 +86,8 @@ def detect_everything(filename, options):
         import matplotlib.pyplot as plt
         plt.title('melspect')
         plt.imshow(melspect, origin='lower', aspect='auto')
-        plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
-        plt.scatter(onsets_idx, [odf[i] for i in onsets_idx], color='yellow')
+        #plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
+        #plt.scatter(onsets_idx, [odf[i] for i in onsets_idx], color='yellow')
         plt.show()
 
     # detect tempo from everything we have
@@ -120,6 +124,22 @@ def detect_everything(filename, options):
             'beats': list(np.round(beats, 3)),
             'tempo': list(np.round(tempo, 2))}
 
+def super_flux(melspect):
+    super_flux_melspect=copy.deepcopy(melspect)
+    
+    for i in range(len(melspect)):
+        for j in range(len(melspect[i])):
+            # apply maximum filter
+            # window is from i-1 to i+1 and j-1 to j+1
+            local_max = 0
+            for x in range(i-1, i+1):
+                for y in range(j-1, j+1):
+                    # set new max value if current entry in melspect is larger
+                    local_max = max(local_max, melspect[min(max(0,x),len(melspect))][min(max(0,y),len(melspect[i]))])
+
+            super_flux_melspect[i][j] = local_max
+
+    return super_flux_melspect  
 
 def onset_detection_function(sample_rate, signal, fps, spect, magspect,
                              melspect, options):

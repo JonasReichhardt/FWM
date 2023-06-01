@@ -86,8 +86,8 @@ def detect_everything(filename, options):
         import matplotlib.pyplot as plt
         plt.title('melspect')
         plt.imshow(melspect, origin='lower', aspect='auto')
-        #plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
-        #plt.scatter(onsets_idx, [odf[i] for i in onsets_idx], color='yellow')
+        plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
+        plt.scatter(onsets_idx, [odf[i] for i in onsets_idx], color='yellow')
         plt.show()
 
     # detect tempo from everything we have

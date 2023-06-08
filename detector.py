@@ -58,6 +58,8 @@ def detect_everything(filename, options):
 
     # compute spectrogram with given number of frames per second
     fps = 70
+    max_bpm = 200
+    min_bpm = 50
     hop_length = sample_rate // fps
     spect = librosa.stft(
             signal, n_fft=2048, hop_length=hop_length, window='hann')
@@ -85,7 +87,7 @@ def detect_everything(filename, options):
     # detect tempo from everything we have
     tempo = detect_tempo(
             sample_rate, signal, fps, spect, magspect, melspect,
-            odf_rate, odf, onsets, options)
+            odf_rate, odf, onsets, options, min_bpm, max_bpm)
 
     # detect beats from everything we have (including the tempo)
     beats = detect_beats(
@@ -204,13 +206,14 @@ def detect_onsets(odf_rate, odf, options):
 
 
 def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
-                 odf_rate, odf, onsets, options):
+                 odf_rate, odf, onsets, options, min_bpm, max_bpm):
     """
     Detect tempo using any of the input representations.
     Returns one tempo or two tempo estimations.
     """    
+    tau_range = 200
     # compute autocorrelation
-    r = auto_correlation(odf, range(300))
+    r = auto_correlation(odf, range(tau_range))
 
     if options.plot:
         import matplotlib.pyplot as plt
@@ -218,7 +221,23 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
         plt.plot(np.arange(len(r)), r, 'r', linewidth=0.5)
         plt.show()
         
-    return [r]
+    # ignore first n and last x elements to only use possible bpm window
+    tau_min = round(fps*60/max_bpm)
+    tau_max = round(fps*60/min_bpm)
+    r_max = np.argmax(r[tau_min:tau_max]) + tau_min
+    
+    # calculate tempo estimation candidates
+    #window 
+    candidates = []
+    candidates.append(r_max)
+    if(r_max/2 >= tau_min):
+        candidates.append(round(r_max/2))
+    
+    if(r_max*2 <= tau_max):
+        candidates.append(r_max*2)
+
+    tempo = [fps/c*60 for c in candidates]
+    return tempo
 
 def auto_correlation(d, lag_range):
     r = []

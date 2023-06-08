@@ -82,14 +82,6 @@ def detect_everything(filename, options):
     # detect onsets from the onset detection function
     onsets, onsets_idx = detect_onsets(odf_rate, odf, options)
 
-    if options.plot:
-        import matplotlib.pyplot as plt
-        plt.title('melspect')
-        plt.imshow(melspect, origin='lower', aspect='auto')
-        plt.plot(np.arange(len(odf)), odf, 'r', linewidth=0.5)
-        plt.scatter(onsets_idx, [odf[i] for i in onsets_idx], color='yellow')
-        plt.show()
-
     # detect tempo from everything we have
     tempo = detect_tempo(
             sample_rate, signal, fps, spect, magspect, melspect,
@@ -152,8 +144,6 @@ def onset_detection_function(sample_rate, signal, fps, spect, magspect,
     # transpose matrix for easier calculation
     # first dimension is now time instead of frequency
     melspect_transp = np.transpose(melspect)
-
-    # todo maximum filter here for specflux
 
     for idx in range(1, len(melspect_transp)):
         sum_t = np.sum(melspect_transp[idx])
@@ -219,13 +209,30 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
     Detect tempo using any of the input representations.
     Returns one tempo or two tempo estimations.
     """    
-    # we only have a dumb dummy implementation here.
-    # it uses the time difference between the first two onsets to
-    # define the tempo, and returns half of that as a second guess.
-    # this is not a useful solution at all, just a placeholder.
-    tempo = 60 / (onsets[1] - onsets[0])
-    return [tempo / 2, tempo]
+    # compute autocorrelation
+    r = auto_correlation(odf, range(300))
 
+    if options.plot:
+        import matplotlib.pyplot as plt
+        plt.title('autocorrelation')
+        plt.plot(np.arange(len(r)), r, 'r', linewidth=0.5)
+        plt.show()
+        
+    return [r]
+
+def auto_correlation(d, lag_range):
+    r = []
+    for tau in lag_range:
+        r_tau = []
+        for t in range(len(d)):
+            try:   
+                r_tau.append(d[t+tau] * d[t])
+            except IndexError:
+                # print(str(t+tau))
+                None
+        r.append(sum(r_tau))
+
+    return r
 
 def detect_beats(sample_rate, signal, fps, spect, magspect, melspect,
                  odf_rate, odf, onsets, tempo, options):

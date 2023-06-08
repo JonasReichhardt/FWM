@@ -2,8 +2,9 @@
 /resources
 /train
 /test
+/test_resources
 
-out.*
+*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

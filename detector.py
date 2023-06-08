@@ -211,7 +211,7 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
     Detect tempo using any of the input representations.
     Returns one tempo or two tempo estimations.
     """    
-    tau_range = 200
+    tau_range = 300
     # compute autocorrelation
     r = auto_correlation(odf, range(tau_range))
 
@@ -227,14 +227,24 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
     r_max = np.argmax(r[tau_min:tau_max]) + tau_min
     
     # calculate tempo estimation candidates
-    #window 
+    candidate_window=5 
     candidates = []
     candidates.append(r_max)
-    if(r_max/2 >= tau_min):
-        candidates.append(round(r_max/2))
+
+    # assume other peaks 
+    if r_max/2 >= tau_min:
+        win_lb = round(r_max/2-candidate_window)
+        win_ub = round(r_max/2+candidate_window)
+        candidates.append(np.argmax(r[win_lb:win_ub]) + win_lb)
     
-    if(r_max*2 <= tau_max):
-        candidates.append(r_max*2)
+    if r_max*2 <= tau_max:
+        win_lb = r_max*2-candidate_window
+        win_ub = r_max*2+candidate_window
+        candidates.append(np.argmax(r[win_lb:win_ub]) + win_lb)
+
+    if len(candidates) > 2:
+        candidate_values = [r[i] for i in candidates]
+        del candidates[np.argmin(candidate_values)]
 
     tempo = [fps/c*60 for c in candidates]
     return tempo

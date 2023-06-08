@@ -214,12 +214,6 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
     tau_range = 200
     # compute autocorrelation
     r = auto_correlation(odf, range(tau_range))
-
-    if options.plot:
-        import matplotlib.pyplot as plt
-        plt.title('autocorrelation')
-        plt.plot(np.arange(len(r)), r, 'r', linewidth=0.5)
-        plt.show()
         
     # ignore first n and last x elements to only use possible bpm window
     tau_min = round(fps*60/max_bpm)
@@ -231,7 +225,9 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
     candidates = []
     candidates.append(r_max)
 
-    # assume other peaks 
+    # assume other peaks are at tau*2 (r_max*2) or tau/2 (r_max/2) of our guess
+    # we search for local maxima in a window around the assumed peaks
+    #   to make sure we use the most suitable value
     if r_max/2 >= tau_min:
         win_lb = round(r_max/2-candidate_window)
         win_ub = round(r_max/2+candidate_window)
@@ -242,10 +238,12 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
         win_ub = r_max*2+candidate_window
         candidates.append(np.argmax(r[win_lb:win_ub]) + win_lb)
 
+    # use only two hypotheses
     if len(candidates) > 2:
         candidate_values = [r[i] for i in candidates]
         del candidates[np.argmin(candidate_values)]
 
+    # convert the tau values back to bpm
     tempo = [fps/c*60 for c in candidates]
     return tempo
 

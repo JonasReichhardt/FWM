@@ -211,7 +211,7 @@ def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
     Detect tempo using any of the input representations.
     Returns one tempo or two tempo estimations.
     """    
-    tau_range = 300
+    tau_range = 200
     # compute autocorrelation
     r = auto_correlation(odf, range(tau_range))
 

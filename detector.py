@@ -23,6 +23,7 @@ try:
 except ImportError:
     tqdm = None
 
+from agent import Agent
 
 def opts_parser():
     usage =\
@@ -78,21 +79,20 @@ def detect_everything(filename, options):
     melspect = super_flux(melspect)
 
     # compute onset detection function
-    odf, odf_rate = onset_detection_function(
-            sample_rate, signal, fps, spect, magspect, melspect, options)
+    odf, odf_rate = onset_detection_function(fps, melspect)
 
     # detect onsets from the onset detection function
-    onsets, onsets_idx = detect_onsets(odf_rate, odf, options)
+    onsets, onsets_idx = detect_onsets(odf_rate, odf)
 
     # detect tempo from everything we have
-    tempo = detect_tempo(
-            sample_rate, signal, fps, spect, magspect, melspect,
-            odf_rate, odf, onsets, options, min_bpm, max_bpm)
+    tempo = detect_tempo(fps, odf, min_bpm, max_bpm)
+
+    # TODO use beat detection to detect tempo again (maybe better result?)
 
     # detect beats from everything we have (including the tempo)
     beats = detect_beats(
             sample_rate, signal, fps, spect, magspect, melspect,
-            odf_rate, odf, onsets, tempo, options)
+            odf_rate, odf, onsets, onsets_idx, tempo, options)
 
     # plot some things for easier debugging, if asked for it
     if options.plot:
@@ -135,8 +135,7 @@ def super_flux(melspect):
 
     return super_flux_melspect  
 
-def onset_detection_function(sample_rate, signal, fps, spect, magspect,
-                             melspect, options):
+def onset_detection_function(fps, melspect):
     """
     LSFS
     """
@@ -157,7 +156,7 @@ def onset_detection_function(sample_rate, signal, fps, spect, magspect,
         
 
 
-def detect_onsets(odf_rate, odf, options):
+def detect_onsets(odf_rate, odf):
     """
     Detect onsets in the onset detection function.
     Returns the positions in seconds.
@@ -201,12 +200,11 @@ def detect_onsets(odf_rate, odf, options):
             last = i
     
     # return sample in time domain and sample index
-    return np.array(onset_index_filtered)/odf_rate, onset_index_filtered, 
+    return np.array(onset_index_filtered)/odf_rate, onset_index_filtered
 
 
 
-def detect_tempo(sample_rate, signal, fps, spect, magspect, melspect,
-                 odf_rate, odf, onsets, options, min_bpm, max_bpm):
+def detect_tempo(fps, odf, min_bpm, max_bpm):
     """
     Detect tempo using any of the input representations.
     Returns one tempo or two tempo estimations.
@@ -262,16 +260,40 @@ def auto_correlation(d, lag_range):
     return r
 
 def detect_beats(sample_rate, signal, fps, spect, magspect, melspect,
-                 odf_rate, odf, onsets, tempo, options):
+                 odf_rate, odf, onsets, onsets_idx, tempo, options):
     """
     Detect beats using any of the input representations.
     Returns the positions of all beats in seconds.
     """
-    # we only have a dumb dummy implementation here.
-    # it returns every 10th onset as a beat.
-    # this is not a useful solution at all, just a placeholder.
+    
+    # generate agents
+    n = 2
+    agents = create_agents(onsets_idx, tempo, fps, n*fps)
+
+    # agents predictions
+    for event in onsets_idx:
+        for agent in agents:
+            agent.process_event(event)
+
+
+
+    
     return onsets[::10]
 
+def create_agents(onsets_idx, tempo, fps, n):
+    """
+    generate agents for events in the first n frames
+    """
+    agents = []
+    inner_interval = 5
+
+    for event in list(filter(lambda e: e <= n, onsets_idx)):
+        for t in tempo:
+            tempo_hypothesis = int(60/t * fps)
+            outer_interval = int(tempo_hypothesis * 0.5)
+            agents.append(Agent(event, t, tempo_hypothesis, inner_interval, inner_interval, outer_interval, outer_interval))
+
+    return agents
 
 def main():
     # parse command line

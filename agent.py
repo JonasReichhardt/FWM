@@ -15,6 +15,7 @@ class Agent:
     self.outer_ub = outer_ub
     self.outer_lb = outer_lb
     self.update_factor = 0.25
+    self.score = 0
 
     self.beats = [(initial_event, True)]
 
@@ -50,15 +51,23 @@ class Agent:
 
       self.update_tempo_hypothesis(beat_prediction, event_frame)
 
+      if in_inner_window:
+        # increase agent score
+        self.score += (beat_prediction - event_frame)
+
       # branch a new agent that does not accept the beat
       # TODO
       if not in_inner_window and in_outer_window:
         None
+    else:
+      # decrease agent score
+      self.score -= (beat_prediction - event_frame)
 
-
-  # update tempo hypothesis by a factor times the diff of prediction and actual beat
-      # case 1: event before prediction -> tempo is faster than predicted, therefore increase tempo hypothesis 
-      # case 2: event after prediction -> tempo is slower than predicted, therefore decrease tempo hypothesis
+  """
+  update tempo hypothesis by a factor times the diff of prediction and actual beat
+  case 1: event before prediction -> tempo is faster than predicted, therefore increase tempo hypothesis 
+  case 2: event after prediction -> tempo is slower than predicted, therefore decrease tempo hypothesis
+  """
   def update_tempo_hypothesis(self, beat_prediction, event_frame):
       self.tempo_hypothesis += self.update_factor * (beat_prediction - event_frame)
       outer_window = int(self.tempo_hypothesis * 0.5)

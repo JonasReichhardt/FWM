@@ -24,6 +24,7 @@ except ImportError:
     tqdm = None
 
 from agent import Agent
+from operator import attrgetter
 
 def opts_parser():
     usage =\
@@ -267,8 +268,7 @@ def detect_beats(sample_rate, signal, fps, spect, magspect, melspect,
     """
     
     # generate agents
-    n = 2
-    agents = create_agents(onsets_idx, tempo, fps, n*fps)
+    agents = create_agents(onsets_idx, tempo, fps, 5)
 
     # agents predictions
     for event_frame in onsets_idx:
@@ -276,9 +276,8 @@ def detect_beats(sample_rate, signal, fps, spect, magspect, melspect,
             agent.process_event(event_frame)
 
 
-
-    
-    return onsets[::10]
+    chad_agent = max(agents, key=attrgetter('score'))
+    return [beat[0]/70 for beat in chad_agent.beats]
 
 def create_agents(onsets_idx, tempo, fps, n):
     """
@@ -287,7 +286,7 @@ def create_agents(onsets_idx, tempo, fps, n):
     agents = []
     inner_interval = 5
 
-    for event in list(filter(lambda e: e <= n, onsets_idx)):
+    for event in onsets_idx[:n]:
         for t in tempo:
             tempo_hypothesis = int(60/t * fps)
             outer_interval = int(tempo_hypothesis * 0.5)

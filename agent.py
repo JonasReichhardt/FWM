@@ -16,14 +16,18 @@ class Agent:
     self.outer_lb = outer_lb
     self.update_factor = 0.25
 
-    self.beats = [Beat(initial_event, True)]
+    self.beats = [(initial_event, True)]
 
   """
   check if event is in inner and/or outer window
   """
   def process_event(self, event_frame):
+    # ignore first iteration
+    if event_frame == self.initial_event:
+      return
+    
     # add new event to beats if last detected beat + tempo hypothesis (phase) is in window
-    last_beat = self.beats[-1]
+    last_beat = self.beats[-1][0]
     beat_prediction = last_beat + self.tempo_hypothesis
 
     in_inner_window = beat_prediction - self.inner_lb <= event_frame <= beat_prediction + self.inner_ub
@@ -31,16 +35,33 @@ class Agent:
     in_outer_window = beat_prediction - self.outer_lb <= event_frame <= beat_prediction + self.outer_ub 
 
     if in_inner_window or in_outer_window:
+      # interpolate beats based on current tempo hypothesis
+      frame_diff = event_frame - last_beat
+
+      if frame_diff > self.tempo_hypothesis:
+        interpolate_beats = int(frame_diff/self.tempo_hypothesis)
+        dist = frame_diff/(interpolate_beats + 1)
+
+        for i in range(1, interpolate_beats):
+          self.beats.append((last_beat + dist * i, False))
+
       # add event to detected beats
-      self.beats.append(Beat(event_frame, True))
+      self.beats.append((event_frame, True))
 
-      # update tempo hypothesis by a factor times the diff of prediction and actual beat
+      self.update_tempo_hypothesis(beat_prediction, event_frame)
+
+      # branch a new agent that does not accept the beat
+      # TODO
+      if not in_inner_window and in_outer_window:
+        None
+
+
+  # update tempo hypothesis by a factor times the diff of prediction and actual beat
       # case 1: event before prediction -> tempo is faster than predicted, therefore increase tempo hypothesis 
-      # case 2: event after prediction -> tempo is slower than predicted, therefore decrease tempo hypothesis 
+      # case 2: event after prediction -> tempo is slower than predicted, therefore decrease tempo hypothesis
+  def update_tempo_hypothesis(self, beat_prediction, event_frame):
       self.tempo_hypothesis += self.update_factor * (beat_prediction - event_frame)
-
-      # TODO go back the self.beats array and interpolate the already detected beats
-    else:
-      # assume beat even if not detected
-      self.beats.append(Beat(event_frame, False))
+      outer_window = int(self.tempo_hypothesis * 0.5)
+      self.outer_lb = outer_window
+      self.outer_ub = outer_window
       

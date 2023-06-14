@@ -270,6 +270,9 @@ def detect_beats(sample_rate, signal, fps, spect, magspect, melspect,
     # generate agents
     agents = create_agents(onsets_idx, tempo, fps, 5)
 
+    for event_frame in onsets_idx:
+        agents[0].process_event(event_frame)
+
     # agents predictions
     for event_frame in onsets_idx:
         for agent in agents:

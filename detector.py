@@ -80,10 +80,10 @@ def detect_everything(filename, options):
     melspect = super_flux(melspect)
 
     # compute onset detection function
-    odf, odf_rate = onset_detection_function(fps, melspect)
+    odf = onset_detection_function(fps, melspect)
 
     # detect onsets from the onset detection function
-    onsets, onsets_idx = detect_onsets(odf_rate, odf)
+    onsets, onsets_idx = detect_onsets(fps, odf)
 
     # detect tempo from everything we have
     tempo = detect_tempo(fps, odf, min_bpm, max_bpm)
@@ -91,9 +91,7 @@ def detect_everything(filename, options):
     # TODO use beat detection to detect tempo again (maybe better result?)
 
     # detect beats from everything we have (including the tempo)
-    beats = detect_beats(
-            sample_rate, signal, fps, spect, magspect, melspect,
-            odf_rate, odf, onsets, onsets_idx, tempo, options)
+    beats = detect_beats(fps, onsets_idx, tempo)
 
     # plot some things for easier debugging, if asked for it
     if options.plot:
@@ -106,11 +104,11 @@ def detect_everything(filename, options):
                        extent=(0, melspect.shape[1] / fps,
                                -0.5, melspect.shape[0] - 0.5))
         axes[1].set_title('onsets')
-        axes[1].plot(np.arange(len(odf)) / odf_rate, odf)
+        axes[1].plot(np.arange(len(odf)) / fps, odf)
         for position in onsets:
             axes[1].axvline(position, color='tab:orange')
         axes[2].set_title('beats (tempo: %r)' % list(np.round(tempo, 2)))
-        axes[2].plot(np.arange(len(odf)) / odf_rate, odf)
+        axes[2].plot(np.arange(len(odf)) / fps, odf)
         for position in beats:
             axes[2].axvline(position, color='tab:red')
         plt.show()
@@ -141,7 +139,6 @@ def onset_detection_function(fps, melspect):
     LSFS
     """
     values = []
-    values_per_second = fps
 
     # transpose matrix for easier calculation
     # first dimension is now time instead of frequency
@@ -153,7 +150,7 @@ def onset_detection_function(fps, melspect):
         sum = sum_t - sum_th
         values.append(max(sum, 0))
             
-    return values, values_per_second
+    return values
         
 
 
@@ -180,7 +177,7 @@ def detect_onsets(odf_rate, odf):
         # sliding window from max(0,lower_bound) to min(upper_bound,list_length)
         # to get rid of out of bounds
         detection_list = odf[max(0,n-max_lb):min(n+max_up,len(odf))]
-        detection_index = np.array(detection_list).argmax()
+        detection_index = np.array(detection_list,dtype=int).argmax()
 
         # calculate mean in window
         mean_list = odf[max(0,n-avg_lb):min(n+avg_up,len(odf))]
@@ -260,8 +257,7 @@ def auto_correlation(d, lag_range):
 
     return r
 
-def detect_beats(sample_rate, signal, fps, spect, magspect, melspect,
-                 odf_rate, odf, onsets, onsets_idx, tempo, options):
+def detect_beats(fps, onsets_idx, tempo):
     """
     Detect beats using any of the input representations.
     Returns the positions of all beats in seconds.

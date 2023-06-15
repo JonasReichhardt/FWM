@@ -1,5 +1,3 @@
-from beat import Beat
-
 class Agent:
   """
   inner_lb, inner_ub: inner window boundaries in number of frames

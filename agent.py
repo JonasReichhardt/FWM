@@ -4,7 +4,7 @@ class Agent:
   outer_lb, outer_ub: outer window boundaries in number of frames
   taken from: https://www.semanticscholar.org/paper/Evaluating-the-Online-Capabilities-of-Onset-Methods-B%C3%B6ck-Krebs/f2696e2fb526f19a0f67e286cb0d8205bc30f8e9
   """
-  def __init__(self, initial_event, t, tempo_hypothesis, inner_lb, inner_ub, outer_lb, outer_ub):
+  def __init__(self, initial_event, t, tempo_hypothesis, inner_lb, inner_ub, outer_lb, outer_ub, onsets, onset_energy):
     self.initial_event = initial_event
     self.initial_tempo = t
     self.tempo_hypothesis = tempo_hypothesis
@@ -14,7 +14,8 @@ class Agent:
     self.outer_lb = outer_lb
     self.update_factor = 0.25
     self.score = 0
-
+    self.onsets = onsets
+    self.onset_energy = onset_energy
     self.beats = [(initial_event, True)]
 
   """
@@ -29,6 +30,12 @@ class Agent:
     last_beat = self.beats[-1][0]
     beat_prediction = last_beat + self.tempo_hypothesis
 
+    # overwrite beat if one with higher energy is found inside the window
+    try:
+      event_frame = self.get_beat_candidate(beat_prediction)
+    except ValueError:
+      None
+
     in_inner_window = beat_prediction - self.inner_lb <= event_frame <= beat_prediction + self.inner_ub
 
     in_outer_window = beat_prediction - self.outer_lb <= event_frame <= beat_prediction + self.outer_ub 
@@ -42,7 +49,7 @@ class Agent:
         dist = frame_diff/(interpolate_beats + 1)
 
         for i in range(1, interpolate_beats):
-          self.beats.append((last_beat + dist * i, False))
+          self.beats.append((last_beat + dist * i, False)) # type: ignore
 
       # add event to detected beats
       self.beats.append((event_frame, True))
@@ -72,4 +79,17 @@ class Agent:
       outer_window = int(self.tempo_hypothesis * 0.5)
       self.outer_lb = outer_window
       self.outer_ub = outer_window
-      
+  
+  """
+  get highest onset in inside the outer and inner window
+  """
+  def get_beat_candidate(self,beat_prediction):
+    lb = beat_prediction - self.outer_lb
+    ub = beat_prediction + self.outer_ub
+
+    candidate_energy = dict()
+    for c in list(filter(lambda n: n>lb and n<ub,self.onsets)):
+      candidate_energy[c] = self.onset_energy[c]
+    return max(candidate_energy, key=candidate_energy.get) # type: ignore
+
+

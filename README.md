@@ -3,7 +3,7 @@ Audio and Music Processing Challenge Template
 
 Best values on training set
 
-Onsets F-score: 0.7753
+Onsets F-score: 0.7979
 Tempo p-score: 0.7711
 Beats F-score: 0.2659
 

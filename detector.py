@@ -83,7 +83,7 @@ def detect_everything(filename, options):
     odf = onset_detection_function(fps, melspect)
 
     # detect onsets from the onset detection function
-    onsets, onsets_idx = detect_onsets(fps, odf)
+    onsets, onsets_idx, onset_energy = detect_onsets(fps, odf)
 
     # detect tempo from everything we have
     tempo = detect_tempo(fps, odf, min_bpm, max_bpm)
@@ -91,7 +91,7 @@ def detect_everything(filename, options):
     # TODO use beat detection to detect tempo again (maybe better result?)
 
     # detect beats from everything we have (including the tempo)
-    beats = detect_beats(fps, onsets_idx, tempo)
+    beats = detect_beats(fps, onsets_idx, tempo, onset_energy)
 
     # plot some things for easier debugging, if asked for it
     if options.plot:
@@ -169,6 +169,7 @@ def detect_onsets(odf_rate, odf):
     distance = 3    #w5
 
     onset_index = []
+    onset_energy = []
 
     # sliding window over odf array
     n = 0
@@ -186,19 +187,22 @@ def detect_onsets(odf_rate, odf):
         # local max needs to be larger or equal than local mean
         if detection_list[detection_index] >= lcl_mean and detection_list[detection_index] > 0:
            onset_index.append(max(0,n-max_lb)+detection_index)
+           onset_energy.append(detection_list[detection_index])
         
         n+=1
 
     # filter out items being too close together
     onset_index_filtered = []
+    onset_energy_filtered = []
     last = 0
     for i in onset_index:
         if i > last + distance:
             onset_index_filtered.append(i)
+            onset_energy_filtered.append((i,onset_energy[onset_index.index(i)]))
             last = i
     
     # return sample in time domain and sample index
-    return np.array(onset_index_filtered)/odf_rate, onset_index_filtered
+    return np.array(onset_index_filtered)/odf_rate, onset_index_filtered, dict(onset_energy_filtered)
 
 
 
@@ -257,14 +261,14 @@ def auto_correlation(d, lag_range):
 
     return r
 
-def detect_beats(fps, onsets_idx, tempo):
+def detect_beats(fps, onsets_idx, tempo, onset_energy):
     """
     Detect beats using any of the input representations.
     Returns the positions of all beats in seconds.
     """
     
     # generate agents
-    agents = create_agents(onsets_idx, tempo, fps, 5)
+    agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
 
     for event_frame in onsets_idx:
         agents[0].process_event(event_frame)
@@ -278,7 +282,7 @@ def detect_beats(fps, onsets_idx, tempo):
     chad_agent = max(agents, key=attrgetter('score'))
     return [beat[0]/70 for beat in chad_agent.beats]
 
-def create_agents(onsets_idx, tempo, fps, n):
+def create_agents(onsets_idx, tempo, fps, onset_energy, n):
     """
     generate agents for events in the first n frames
     """
@@ -289,7 +293,7 @@ def create_agents(onsets_idx, tempo, fps, n):
         for t in tempo:
             tempo_hypothesis = int(60/t * fps)
             outer_interval = int(tempo_hypothesis * 0.5)
-            agents.append(Agent(event, t, tempo_hypothesis, inner_interval, inner_interval, outer_interval, outer_interval))
+            agents.append(Agent(event, t, tempo_hypothesis, inner_interval, inner_interval, outer_interval, outer_interval, onsets_idx, onset_energy))
 
     return agents
 

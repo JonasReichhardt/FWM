@@ -270,15 +270,11 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
     # generate agents
     agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
 
-    is_done, new_agent = agents[1].process_event()
-    while is_done == False:
-        is_done, new_agent = agents[1].process_event()
+    new_agent = agents[1].process()
 
     # agents predictions
     for agent in agents:
-        is_done, new_agent = agent.process_event()
-        while is_done == False:
-            is_done, new_agent = agent.process_event()
+        new_agent = agent.process()
 
     #if new_agent != None:
     #    agents.append(new_agent)
@@ -318,7 +314,8 @@ def main():
     if tqdm is not None:
         infiles = tqdm.tqdm(infiles, desc='File')
     results = {}
-    for filename in infiles:
+    for idx, filename in enumerate(infiles):
+        print("Files:", idx, len(infiles))
         results[filename.stem] = detect_everything(filename, options)
 
     # write output file

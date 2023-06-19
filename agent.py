@@ -6,7 +6,7 @@ class Agent:
   outer_lb, outer_ub: outer window boundaries in number of frames
   taken from: https://www.semanticscholar.org/paper/Evaluating-the-Online-Capabilities-of-Onset-Methods-B%C3%B6ck-Krebs/f2696e2fb526f19a0f67e286cb0d8205bc30f8e9
   """
-  def __init__(self, initial_event, initial_tempo, tempo_hypothesis, inner_lb, inner_ub, outer_lb, outer_ub, onsets, onset_energy, score, beats, min_tempo):
+  def __init__(self, initial_event, initial_tempo, tempo_hypothesis, inner_lb, inner_ub, outer_lb, outer_ub, onsets, onset_energy, score, beats, min_tempo, fps):
     self.initial_event = initial_event
     self.initial_tempo = initial_tempo
     self.tempo_hypothesis = tempo_hypothesis
@@ -18,6 +18,7 @@ class Agent:
     self.onsets = onsets
     self.onset_energy = onset_energy
     self.min_tempo = min_tempo
+    self.fps = fps
     self.est_mult = 1
     self.update_factor = 0.25
 
@@ -78,7 +79,8 @@ class Agent:
             # create new agent if in_outer_window is true
             new_agents.append(Agent(beat_candidate, self.tempo_hypothesis, self.tempo_hypothesis, 
                         self.inner_lb, self.inner_ub, self.outer_lb, self.outer_ub, 
-                        self.onsets, self.onset_energy, self.score * 0.9, self.beats, self.min_tempo))
+                        self.onsets, self.onset_energy, self.score * 0.9, self.beats, 
+                        self.min_tempo, self.fps))
         else:
           # decrease agent score
           self.score -= error * self.onset_energy[beat_candidate] * normalization_factor

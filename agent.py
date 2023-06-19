@@ -73,7 +73,7 @@ class Agent:
             self.score += 1 - error * self.onset_energy[beat_candidate] * normalization_factor
           else:
             # decrease agent score
-            self.score -= 2 * error * self.onset_energy[beat_candidate] * normalization_factor
+            self.score -= error * self.onset_energy[beat_candidate] * normalization_factor
 
             # create new agent if in_outer_window is true
             new_agents.append(Agent(beat_candidate, self.tempo_hypothesis, self.tempo_hypothesis, 
@@ -81,7 +81,7 @@ class Agent:
                         self.onsets, self.onset_energy, self.score * 0.9, self.beats, self.min_tempo))
         else:
           # decrease agent score
-          self.score -= 4 * error * self.onset_energy[beat_candidate] * normalization_factor
+          self.score -= error * self.onset_energy[beat_candidate] * normalization_factor
         
         self.est_mult = 1
 

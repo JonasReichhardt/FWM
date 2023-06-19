@@ -314,7 +314,7 @@ def create_agents(onsets_idx, tempo, fps, onset_energy, n):
     for event in onsets_idx[:n]:
         for t in tempo:
             tempo_hypothesis = int(60/t * fps)
-            outer_interval = int(tempo_hypothesis * 0.5)
+            outer_interval = int(tempo_hypothesis * 0.45)
             agents.append(Agent(event, t, tempo_hypothesis, inner_interval, inner_interval, 
                                 outer_interval, outer_interval, onsets_idx, onset_energy, 
                                 0, [], tempo[0]))

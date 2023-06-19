@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 import json
 
 import numpy as np
-import copy
+import copy as cp
 from scipy.io import wavfile
 import librosa
 try:
@@ -118,7 +118,7 @@ def detect_everything(filename, options):
             'tempo': list(np.round(tempo, 2))}
 
 def super_flux(melspect):
-    super_flux_melspect=copy.deepcopy(melspect)
+    super_flux_melspect=cp.deepcopy(melspect)
     
     for i in range(len(melspect)):
         for j in range(len(melspect[i])):
@@ -270,17 +270,35 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
     # generate agents
     agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
 
-    new_agent = agents[1].process()
+    # new_agent = agents[1].process()
 
     # agents predictions
-    for agent in agents:
-        new_agent = agent.process()
+    for idx in onsets_idx:
+        new_agents = []
+        for agent in agents:
+            new_agents = agent.process(idx)
 
-    #if new_agent != None:
-    #    agents.append(new_agent)
-
-    # prune when agent is equal at current onset index
-
+        # append new agents
+        if len(new_agents) > 0:
+            agents.extend(new_agents)
+           
+        # prune similar agents
+        for agent in cp.deepcopy(agents):
+            prune_group = list(
+                filter(
+                    lambda a: a.tempo_hypothesis * 0.95 <= agent.tempo_hypothesis <= a.tempo_hypothesis * 1.05 
+                                 and a.beats[-1][0] * 0.95 <= agent.beats[-1][0] <= a.beats[-1][0] * 1.05, 
+                    agents
+                ))
+            
+            # check if prune_group is larger than 1
+            # (filter always finds the agent himself)
+            if len(prune_group) > 1:
+                max_score = max(prune_group, key=attrgetter('score')).score
+                prune_agents = list(filter(lambda a: a.score < max_score, prune_group))
+                # only keep element with max score
+                agents = [a for a in agents if a not in prune_agents]
+                None
 
     best_agent = max(agents, key=attrgetter('score'))
     # todo agent[1] detects all beats but has worse score -> why???
@@ -291,7 +309,7 @@ def create_agents(onsets_idx, tempo, fps, onset_energy, n):
     generate agents for events in the first n frames
     """
     agents = []
-    inner_interval = 5
+    inner_interval = 3
 
     for event in onsets_idx[:n]:
         for t in tempo:
@@ -299,7 +317,7 @@ def create_agents(onsets_idx, tempo, fps, onset_energy, n):
             outer_interval = int(tempo_hypothesis * 0.5)
             agents.append(Agent(event, t, tempo_hypothesis, inner_interval, inner_interval, 
                                 outer_interval, outer_interval, onsets_idx, onset_energy, 
-                                0, []))
+                                0, [], tempo[0]))
 
     return agents
 

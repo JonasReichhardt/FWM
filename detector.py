@@ -270,19 +270,20 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
     # generate agents
     agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
 
-    for event_frame in onsets_idx:
-        agents[1].process_event(event_frame)
+    is_done, new_agent = agents[1].process_event()
+    while is_done == False:
+        is_done, new_agent = agents[1].process_event()
 
     # agents predictions
-    for event_frame in onsets_idx:
-        new_agent = None
-        for agent in agents:
-            new_agent = agent.process_event(event_frame)
+    for agent in agents:
+        is_done, new_agent = agent.process_event()
+        while is_done == False:
+            is_done, new_agent = agent.process_event()
 
-        if new_agent != None:
-            agents.append(new_agent)
+    #if new_agent != None:
+    #    agents.append(new_agent)
 
-        # prune when agent is equal at current onset index
+    # prune when agent is equal at current onset index
 
 
     best_agent = max(agents, key=attrgetter('score'))

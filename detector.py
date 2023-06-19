@@ -271,16 +271,23 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
     agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
 
     for event_frame in onsets_idx:
-        agents[0].process_event(event_frame)
+        agents[1].process_event(event_frame)
 
     # agents predictions
     for event_frame in onsets_idx:
+        new_agent = None
         for agent in agents:
-            agent.process_event(event_frame)
+            new_agent = agent.process_event(event_frame)
+
+        if new_agent != None:
+            agents.append(new_agent)
+
+        # prune when agent is equal at current onset index
 
 
-    chad_agent = max(agents, key=attrgetter('score'))
-    return [beat[0]/70 for beat in chad_agent.beats]
+    best_agent = max(agents, key=attrgetter('score'))
+    # todo agent[1] detects all beats but has worse score -> why???
+    return [beat[0]/70 for beat in best_agent.beats]
 
 def create_agents(onsets_idx, tempo, fps, onset_energy, n):
     """
@@ -293,7 +300,9 @@ def create_agents(onsets_idx, tempo, fps, onset_energy, n):
         for t in tempo:
             tempo_hypothesis = int(60/t * fps)
             outer_interval = int(tempo_hypothesis * 0.5)
-            agents.append(Agent(event, t, tempo_hypothesis, inner_interval, inner_interval, outer_interval, outer_interval, onsets_idx, onset_energy))
+            agents.append(Agent(event, t, tempo_hypothesis, inner_interval, inner_interval, 
+                                outer_interval, outer_interval, onsets_idx, onset_energy, 
+                                0, []))
 
     return agents
 

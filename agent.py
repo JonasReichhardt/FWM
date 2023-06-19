@@ -28,7 +28,7 @@ class Agent:
   """
   check if event is in inner and/or outer window
   """
-  def process_event(self):
+  def process_event(self, event_frame):
     # ignore first iteration
     if event_frame == self.initial_event:
       return

@@ -5,7 +5,7 @@ Best values on training set
 
 Onsets F-score: 0.7979
 Tempo p-score: 0.7711
-Beats F-score: 0.2659
+Beats F-score: 0.5467
 
 This provides two Python scripts that may serve as a template for your submission to the onset detection, beat detection and tempo estimation challenges. Usage is completely optional.
 

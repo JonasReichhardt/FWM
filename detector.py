@@ -270,8 +270,6 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
     # generate agents
     agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
 
-    new_agent = agents[1].process()
-
     # agents predictions
     for agent in agents:
         new_agent = agent.process()

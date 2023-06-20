@@ -297,7 +297,7 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
             # (filter always finds the agent himself)
             if len(prune_group) > 1:
                 max_score = max(prune_group, key=attrgetter('score')).score
-                prune_agents = list(filter(lambda a: a.score < max_score, prune_group))
+                prune_agents = list(filter(lambda a: a.score < (max_score * 0.95), prune_group))
                 # only keep element with max score
                 agents = [a for a in agents if a not in prune_agents]
                 None

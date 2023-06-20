@@ -270,20 +270,9 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
     # generate agents
     agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
 
-    for event_frame in onsets_idx:
-        agents[1].process_event(event_frame)
-
     # agents predictions
-    for event_frame in onsets_idx:
-        new_agent = None
-        for agent in agents:
-            new_agent = agent.process_event(event_frame)
-
-        if new_agent != None:
-            agents.append(new_agent)
-
-        # prune when agent is equal at current onset index
-
+    for agent in agents:
+        new_agent = agent.process()
 
     best_agent = max(agents, key=attrgetter('score'))
     # todo agent[1] detects all beats but has worse score -> why???
@@ -317,7 +306,8 @@ def main():
     if tqdm is not None:
         infiles = tqdm.tqdm(infiles, desc='File')
     results = {}
-    for filename in infiles:
+    for idx, filename in enumerate(infiles):
+        print("Files:", idx, len(infiles))
         results[filename.stem] = detect_everything(filename, options)
 
     # write output file

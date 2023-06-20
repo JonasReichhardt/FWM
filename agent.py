@@ -17,67 +17,69 @@ class Agent:
     self.score = score
     self.onsets = onsets
     self.onset_energy = onset_energy
+    self.est_mult = 1
+    self.update_factor = 0.25
 
     if len(beats) == 0:
       self.beats = [(initial_event, True)]
     else:
       self.beats = cp.deepcopy(beats)
-    
-    self.update_factor = 0.25
 
   """
   check if event is in inner and/or outer window
   """
-  def process_event(self, event_frame):
-    # ignore first iteration
-    if event_frame == self.initial_event:
-      return
-    
-    # add new event to beats if last detected beat + tempo hypothesis (phase) is in window
-    last_beat = self.beats[-1][0]
-    beat_prediction = last_beat + self.tempo_hypothesis
+  def process(self):
+    beat_prediction = 0
+    newAgent = None # TODO convert to array
 
-    # overwrite beat if one with higher energy is found inside the window
-    try:
-      event_frame = self.get_beat_candidate(beat_prediction)
-    except ValueError:
-      None
+    while beat_prediction < self.onsets[-1]:
+      last_beat = self.beats[-1][0]
+      # add new event to beats if last detected beat + tempo hypothesis (phase) is in window
+      beat_prediction = last_beat + (self.tempo_hypothesis * self.est_mult)
 
-    in_inner_window = beat_prediction - self.inner_lb <= event_frame <= beat_prediction + self.inner_ub
-    in_outer_window = beat_prediction - self.outer_lb <= event_frame <= beat_prediction + self.outer_ub 
+      # beat candidate is beat with the highest energy inside the window
+      try:
+        beat_candidate = self.get_beat_candidate(beat_prediction)
 
-    newAgent = None
-    
-    if in_inner_window or in_outer_window:
-      # interpolate beats based on current tempo hypothesis
-      frame_diff = event_frame - last_beat
+        in_inner_window = beat_prediction - self.inner_lb <= beat_candidate <= beat_prediction + self.inner_ub
+        in_outer_window = beat_prediction - self.outer_lb <= beat_candidate <= beat_prediction + self.outer_ub 
 
-      if frame_diff > self.tempo_hypothesis:
-        interpolate_beats = int(frame_diff/self.tempo_hypothesis)
-        dist = frame_diff/(interpolate_beats + 1)
+        error = self.outer_lb * abs(beat_prediction - beat_candidate) / 100
 
-        for i in range(1, interpolate_beats):
-          self.beats.append((last_beat + dist * i, False)) # type: ignore
-  
-      # add event to detected beats
-      self.beats.append((event_frame, True))
+        if in_inner_window or in_outer_window:
+          # interpolate beats based on current tempo hypothesis
+          frame_diff = beat_candidate - last_beat
 
-      if in_inner_window:
-        # increase agent score
-        self.score += (beat_prediction - event_frame)
-      else:
-        # decrease agent score
-        self.score -= self.update_factor * (beat_prediction - event_frame)
+          if frame_diff > self.tempo_hypothesis:
+            interpolate_beats = int(frame_diff/self.tempo_hypothesis)
+            dist = frame_diff/(interpolate_beats + 1)
 
-        # create new agent if in_outer_window is true
-        newAgent = Agent(self.initial_event, self.initial_tempo, self.tempo_hypothesis, 
-                     self.inner_lb, self.inner_ub, self.outer_lb, self.outer_ub, 
-                     self.onsets, self.onset_energy, self.score, self.beats)
-    else:
-      # decrease agent score
-      self.score -= (beat_prediction - event_frame)
+            for i in range(1, interpolate_beats):
+              self.beats.append((last_beat + dist * i, False)) # type: ignore
 
-    self.update_tempo_hypothesis(beat_prediction, event_frame)
+          # add event to detected beats
+          self.beats.append((beat_candidate, True))
+
+          if in_inner_window:
+            # increase agent score
+            self.score += 1 - error * beat_prediction
+          else:
+            # decrease agent score
+            self.score -= self.update_factor * error * beat_prediction
+
+            # create new agent if in_outer_window is true
+            newAgent = Agent(self.initial_event, self.initial_tempo, self.tempo_hypothesis, 
+                        self.inner_lb, self.inner_ub, self.outer_lb, self.outer_ub, 
+                        self.onsets, self.onset_energy, self.score, self.beats)
+        else:
+          # decrease agent score
+          self.score -= error * beat_prediction
+        
+        self.est_mult = 1
+
+        self.update_tempo_hypothesis(beat_prediction, beat_candidate)
+      except ValueError:
+        self.est_mult += 1
 
     return newAgent
 

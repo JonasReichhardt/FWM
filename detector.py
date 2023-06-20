@@ -85,10 +85,14 @@ def detect_everything(filename, options):
     # detect onsets from the onset detection function
     onsets, onsets_idx, onset_energy = detect_onsets(fps, odf)
 
+    # if options.plot:
+    #     import matplotlib.pyplot as plt
+    #     plt.title('onset_energy')
+    #     plt.plot(np.arange(len(odf)) / fps, odf)
+    #     plt.show()
+
     # detect tempo from everything we have
     tempo = detect_tempo(fps, odf, min_bpm, max_bpm)
-
-    # TODO use beat detection to detect tempo again (maybe better result?)
 
     # detect beats from everything we have (including the tempo)
     beats = detect_beats(fps, onsets_idx, tempo, onset_energy)
@@ -269,8 +273,6 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
     
     # generate agents
     agents = create_agents(onsets_idx, tempo, fps, onset_energy, 5)
-
-    # new_agent = agents[1].process()
 
     # agents predictions
     for idx in onsets_idx:

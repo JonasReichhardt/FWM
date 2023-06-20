@@ -53,7 +53,7 @@ class Agent:
         in_outer_window = beat_prediction - self.outer_lb <= beat_candidate <= beat_prediction + self.outer_ub 
 
         error = abs(beat_prediction - beat_candidate) / (self.outer_lb + self.outer_ub)
-        normalization_factor = self.tempo_hypothesis/ self.min_tempo / 70
+        normalization_factor = self.tempo_hypothesis / self.min_tempo / 70
 
         if in_inner_window or in_outer_window:
           # interpolate beats based on current tempo hypothesis
@@ -71,7 +71,7 @@ class Agent:
 
           if in_inner_window:
             # increase agent score
-            self.score += 1 - error * self.onset_energy[beat_candidate] * normalization_factor
+            self.score += (1 - error) * self.onset_energy[beat_candidate] * normalization_factor
           else:
             # decrease agent score
             self.score -= error * self.onset_energy[beat_candidate] * normalization_factor
@@ -98,8 +98,8 @@ class Agent:
   case 1: event before prediction -> tempo is faster than predicted, therefore increase tempo hypothesis 
   case 2: event after prediction -> tempo is slower than predicted, therefore decrease tempo hypothesis
   """
-  def update_tempo_hypothesis(self, beat_prediction, event_frame):
-      self.tempo_hypothesis += self.update_factor * (beat_prediction - event_frame) / 2
+  def update_tempo_hypothesis(self, beat_prediction, beat_candidate):
+      self.tempo_hypothesis += self.update_factor * (beat_prediction - beat_candidate)
       outer_window = int(self.tempo_hypothesis * 0.45)
       self.outer_lb = outer_window
       self.outer_ub = outer_window

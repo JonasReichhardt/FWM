@@ -303,7 +303,7 @@ def detect_beats(fps, onsets_idx, tempo, onset_energy):
                 None
 
     best_agent = max(agents, key=attrgetter('score'))
-    # todo agent[1] detects all beats but has worse score -> why???
+
     return [beat[0]/fps for beat in best_agent.beats]
 
 def create_agents(onsets_idx, tempo, fps, onset_energy, n):
